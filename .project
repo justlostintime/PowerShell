@@ -1,0 +1,19 @@
+# Gambas Project File 3.0
+Title=Run Cmds As Sudo user
+Startup=Main
+Version=1.0.1
+Component=gb.args
+Component=gb.image
+Component=gb.gui
+Component=gb.form
+Component=gb.eval
+Component=gb.eval.highlight
+Component=gb.term
+Component=gb.form.terminal
+Component=gb.pcre
+Description="This is a simple application which will create a sudo shell in background that will be available to execute\nSudo'd commands with just a single password entered.\n\nResponses are returned to the main application as strings line by line with the exit code\n\nResponse content is filtered to remove all terminal control escape sequences.\n\nThe module ExecPowershell is executed by sudo and processes all commands at an elevated level\nThe class PowerShell is the object wich may be used to interface to the ExecShell\n\nThe Main is an example of using the Power Shell Interface"
+Authors="JustLostintime@gmail.com"
+TabSize=2
+Language=en_US
+Vendor=Westwood
+Packager=1

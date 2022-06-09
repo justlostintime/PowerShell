@@ -1,0 +1,23 @@
+# List of regexp expression to be applied to incomming responses to
+# PowerShell Requests
+# All Lines starting with # are ignored
+\x1B\[.*[mnupsHJKABCDEFG]
+# the above combines all of the following into a single regexp
+# Which will filter all common ANSII escape sequences from the recieved data
+#\x1B\[.*H
+#\x1B\[.*J
+#\x1B\[.*K
+#\x1B\[.*h
+#\x1B\[.*l
+#\x1B\[.*f
+#\x1B\[.*A
+#\x1B\[.*B
+#\x1B\[.*C
+#\x1B\[.*D
+#\x1B\[.*E
+#\x1B\[.*F
+#\x1B\[.*G
+#\x1B\[.*n
+#\x1B\[.*s
+#\x1B\[.*u
+#\x1B\[.*p

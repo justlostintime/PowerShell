@@ -1,0 +1,67 @@
+' Gambas module file
+
+''' Example main programming using the powershell
+
+Public Sub Main()
+
+  EnablePowerShell()
+
+  '  Everything above this line is required to support the ExecPowerShell and PasswordShell
+  ' Everything below here is the users application implementation
+  ' The simple program below is an example of the interface, just input command and print the response
+  ' to execute a bash line enter for example:
+  ' CMD >> bash -c "ls -l |  tr [a-z] [A-Z]"
+  ' The -c command must be in quotes
+
+  Dim helpinfo As String = File.Load("HelpInfo")
+  Exec ["clear"] Wait
+  Print HelpInfo
+
+  Dim MyShell As New PowerShell As "PwShell"
+
+  Dim cmdline As String
+
+  Print "Cmd >> ";
+  Flush
+  While True
+
+    If Lof(File.in) Then
+
+      Line Input cmdline
+      If cmdline == "exit" Then Break
+      MyShell.Execute(Split(cmdline, " ", "\"", True, False), True)
+      Print "Cmd >> ";
+      Flush
+    Endif
+    Wait 0.1
+  Wend
+
+  Quit 0
+
+End
+
+'' This is called to process each line of output from the executed command
+'' Individual line may be handled, suggest a state machine
+'' the exit code is passed with each line of result
+'' if no text then data will be "" and a valid exit code
+Public Sub pwshell_response(data As String, ExitCode As Integer)  ' the exeit code of the command is returned every time
+
+  Print "Code =";; ExitCode;; Quote(data)
+  If ExitCode <> 0 Then Stop Event
+
+End
+
+'' If an error occurs when processing a command
+'' this will be called with any text and the error code returned
+
+Public Sub pwshell_PowerShellError(text As String, code As Integer)
+
+  Debug text;; "Code="; code
+
+End
+
+
+
+
+
+

@@ -1,0 +1,10 @@
+This is a sample program, It accepts a line of input
+sends it to the powerShell and prints the results.
+
+examples:
+cmd >> ls -l
+cmd >> bash -c "apt update && apt upgrade -y"
+cmd >> apt update
+cmd >> synaptic
+
+Enter : 'exit' to end the session 

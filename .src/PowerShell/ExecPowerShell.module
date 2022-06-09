@@ -1,0 +1,81 @@
+' Gambas module file
+
+''' This process is started when the application name begins with Power_
+''' The powershell class creates links to the original App with this  name and then
+''' invokes the sudo command with the link name.\
+''' This is the interface which is called to open communications with the PowerShell class
+''' in the users application\
+''' This will wait for an input from the user application and execute it in sudo mode\
+''' This process is started by sudo, and runs until it is killed by user's task
+''' this Expects mesages to be in the csv format
+''' examples:\
+''' ls,-l\
+''' bash, -c,"ls -l | tr [a-z] [A-Z]"\
+''' This always returns the commands exit code and output\
+''' The user side PowerShell object takes care of formatting the command correctly
+'''  and correctly processing the response.
+'''
+
+Export
+'' The input pipe to be read
+Public InPipe As File
+'' The output pipe to be written to
+Public OutPipe As File
+
+'' The recieved command to be processed
+Public Cmd As String = ""
+
+
+Public Sub _call(InPipeName As String, OutPipeName As String)  ' expects the input and output pipe names
+
+  'Debug "PowerShell Opening Pipes, in= ";; inPipeName;; "Out =";; OutPipeName
+
+  InPipe = Open Pipe InPipeName For Read
+  OutPipe = Open Pipe OutPipeName For Write
+
+  Input From InPipe
+
+  While True
+    Try Line Input cmd
+    If Error Then Continue
+    'Debug "Command = ";; cmd
+    If cmd = "" Then Continue
+    ExecuteCommand()
+  Wend
+
+Catch
+  Debug Error.text;; Error.where;; Error.number
+
+End
+
+'' This is the core of the PowerShell\
+'' Each recieved command is executed and the response is returned
+'' The first message is a begin command.\
+'' Then the result of the command is sent.\
+'' Then an end command is sent with the exit code from the command.\
+'' The comand format is a csv list of parameters.\
+'' This is managed by the user sidetprocess  interface.
+Public Sub ExecuteCommand()
+
+  Dim result As String = ""
+  Dim cmdlist As String[] = Split(cmd, ",", "\"", True, False)
+
+  Try Exec cmdlist To result
+
+  If Not Error Then
+    Print #OutPipe, "Begin"
+    Print #OutPipe, result
+    Print #OutPipe, "End " & Process.LastValue
+    Flush #OutPipe
+  Else
+    Print #OutPipe, "Error"
+    Print #OutPipe, Error.text
+    Print #OutPipe, "End " & Error.Code
+    Flush #OutPipe
+  Endif
+
+  'Debug "Power Shell Results Begin\n";; result;; "End\n"
+
+End
+
+

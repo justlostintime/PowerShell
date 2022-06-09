@@ -1,0 +1,185 @@
+' Gambas class file
+
+''' PowerShell Creates a background Task with rasied priviledge and then
+''' facilitates the communications between the user and the background task that executes
+''' the commands, and returns the responses to the user.\
+''' Creates symbolic links to the application with the Power_ and Password_\
+''' prefixes which allows the EnablePowerShell to process the correct path
+''' when the linked names are started.
+''' A sudo command line is executed which passes the askpass link name and Power_ \
+''' link names and is used by sudo to start the bg process ExecPowerShell at an elevated level.\
+''' It handles the Special case of directly executing a project directory correctly as well.
+
+Export
+
+'' Response Data is returned one line at a time and is always returned with the commands last exit code
+Event response(Data As String, code As Integer)
+'' The error is raised when exec has an error or if the sudo process as any other failure
+Event PowerShellError(Text As String, Code As Integer)
+
+'' process ID of the actual ExecPowerShell background process
+Property Read PowerShellID As Process Use $PowerShellId
+
+'' The name of the pipe PowerShell reads from
+Property Read InPipeName As String Use $InPipeName = ""
+'' The name of the pipe PowerShell writes to
+Property Read OutPipeName As String Use $OutPipeName = ""
+
+'' stream input from  bg task
+Property Read InPipe As File Use $InPipe
+'' stream output to bg task
+Property Read OutPipe As File Use $OutPipe
+
+'' PowerShell Is Waiting For a reply
+Property Read Waiting As Boolean Use $Waiting = False
+'' PowerShell has opened and started the BG task to serve commands
+Property Read Opened As Boolean Use $Opened = False
+
+'' Table of strings to be filtered from the incomming responses.\
+'' See the EscSeq file included with the project.\
+'' This file can contain any combination of characters to filter out.
+'' Currently it filters all terminal escape sequences.\
+'' This table may also be replaced by the user after the PowerShell is
+'' Started.\
+'' This is the default replace filter for regexp:\
+''  \\x1B\\[\.\*\[mnupsHJKABCDEFG\]\
+Property FilterTable As String[] Use $FilterTable
+
+Public Sub _new()
+
+  $InPipeName = Temp("Out_")
+  $OutPipeName = Temp("In_")
+
+  $inPipe = Open Pipe $InPipeName For Read Watch
+  $outpipe = Open Pipe $OutPipeName For Write
+
+  Dim AppRoot As String = Application.Path &/ Application.name
+  Dim AppPass As String = AppRoot
+
+  If Exist(AppRoot & ".gambas") Then
+    AppRoot &= ".gambas"
+    AppPass = AppRoot
+  Else If Not Exist(AppRoot) Then  'must be a project directory project
+    AppRoot = Application.Path
+    AppPass = Temp("TempPass")
+    Exec ["gba3", "-o", AppPass, AppRoot]
+  Endif
+
+  Dim Askpass As String = Temp("Password_" & Application.name)
+  Link AppPass To askpass
+  Dim MyShell As String = Temp("Power_" & Application.name)
+  Link AppRoot To MyShell
+
+  Env["SUDO_ASKPASS"] = AskPass
+  'Debug "Link :";; AppPass;; "to";; askpass
+  'Debug "Link :";; AppRoot;; "to";; MyShell
+
+  If IsDir(AppRoot) Then
+    $PowerShellID = Exec ["sudo", "-A", "gbx3", MyShell, "--", "-i", $OutPipeName, "-o", $InPipeName]
+  Else
+    $PowerShellID = Exec ["sudo", "-A", MyShell, "-i", $OutPipeName, "-o", $InPipeName]
+  Endif
+  $opened = True
+
+End
+
+'' Reads the input stream from the sudo process processes and filters the
+'' results and return either and error or response event for each line of the reply.
+Public Sub file_read()
+
+  ' Debug "File Read Called"
+  Dim buffer As String
+  Dim lines As String[]
+
+  buffer = Read #Last, Lof(Last)
+  lines = Split(buffer, "\n", "\"", True, True)
+  If lines[0] == "begin" Then
+    Dim s As String = ""
+    Dim resultCode As Integer = Split(lines.last, " ").last
+    Dim bStop As Boolean
+    If lines.count = 2 Then
+      bStop = Raise response(s, resultCode)                  ' remove all escape sequences Then
+    Else
+      For j As Integer = 1 To lines.max - 1
+        bStop = Raise response(filtered(lines[j]), resultCode)                  ' remove all escape sequences Then
+        If bStop Then
+          Break                                                                                                ' The processing of the data was cancelled by :  Stop Event
+        Endif
+      Next
+    Endif
+  Else If lines[0] == "error" Then
+    Dim smessage As String = ""
+    For i As Integer = 1 To lines.Max - 1
+      sMessage &= lines[i] & " : "
+    Next
+    Raise PowerShellError(SMessage, Split(lines.last, " ").last)
+  Endif
+
+  $Waiting = False
+
+End
+
+Public Sub _free()
+
+  Me.close()
+
+End
+
+
+'' Closes the connection to the sudo process and
+'' terminates the process
+Public Sub {close}()
+
+  If Not $Opened Then Return
+
+  $PowerShellID.Kill()
+
+  Close $InPipe
+  Close $OutPipe
+
+  $Opened = False
+
+End
+
+'' Executes the the command passed by the user.\
+'' this expects the command to be in the same format as the gambas EXEC comman.\
+'' If there is some problem it raises a powershellerror
+'' If the user wants to wait for a response they must pass the waiting flag
+Public Sub Execute(Cmd As Variant[], Optional bWaiting As Boolean = False) '' array the same as used for an exec call
+
+  Dim cmds As New String[]
+
+  $Waiting = bWaiting
+
+  For Each s As String In Cmd
+    cmds.Add(Quote(s))
+  Next
+
+  Try Print #$OutPipe, cmds.Join()
+  If Error Then
+    Raise PowerShellError(Error.text, Error.Code)
+  Endif
+
+  While $Waiting
+    Wait 0.01
+  Wend
+
+End
+
+'' This will apply a regexp remove for each pattern in the filtertable
+Public Sub filtered(Source As String) As String
+
+  If $FilterTable = Null Then
+    $filterTable = New String[]
+    For Each s As String In Split(File.Load("EscSeq"), "\n", "\"", True, False)
+      If s[0] = "#" Then Continue
+      $FilterTable.Add(s)
+    Next
+  Endif
+  For Each sReplace As String In $FilterTable
+    Source = RegExp.Replace(Source, sReplace, "")
+  Next
+
+  Return Source
+
+End

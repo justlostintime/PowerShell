@@ -1,0 +1,42 @@
+' Gambas module file
+
+''' This basically starts the correct process based upon the Application Name.\
+''' Power_  Starts the Sudo raised level process ExecPowerShell\
+''' Password_ Starts the Password form and print the entered password\
+''' Else it just returns to the users program\
+''' the USer side PowerShell class creats links named Password_ and Power_
+''' which are started by this module
+''' This will return the list of args not used by this function
+''' the user may also do another args.begin etc.
+Export
+PowerShell As Boolean = False
+PasswordShell As Boolean = False
+
+Property Read InPipeName As String Use $InPipeName = ""
+Property Read OutPipeName As String Use $OutPipeName = ""
+
+Public Sub _call() As String[]
+
+  Select Case Split(Application.name, "_")[0]
+    Case "Password"
+      PasswordShell = True
+    Case "Power"
+      PowerShell = True
+  End Select
+
+  Args.Begin()
+  $InPipeName = Args.Get("i", "in", "Input pipe name", "Input Pipe", Application.Name & "_In")
+  $OutPipeName = Args.Get("o", "out", "Output Pipe Name", "Output Pipe", Application.Name & "_Out")
+  Args.End()
+
+  If PowerShell Then
+    ExecPowerShell($InPipeName, $OutPipeName)
+    Quit 0
+  Else If PasswordShell Then
+    PasswordReader.ShowModal()
+    Quit 0
+  Endif
+
+  Return args.All
+
+End
