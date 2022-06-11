@@ -142,7 +142,7 @@ Public Sub {close}()
 End
 
 '' Executes the the command passed by the user.\
-'' this expects the command to be in the same format as the gambas EXEC comman.\
+'' this expects the command to be in the same format as the gambas EXEC command.\
 '' If there is some problem it raises a powershellerror
 '' If the user wants to wait for a response they must pass the waiting flag
 Public Sub Execute(Cmd As Variant[], Optional bWaiting As Boolean = False) '' array the same as used for an exec call
