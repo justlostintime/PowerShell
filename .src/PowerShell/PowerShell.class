@@ -10,6 +10,8 @@
 ''' link names and is used by sudo to start the bg process ExecPowerShell at an elevated level.\
 ''' It handles the Special case of directly executing a project directory correctly as well.
 
+' Released under GPL 3 license
+
 Export
 
 '' Response Data is returned one line at a time and is always returned with the commands last exit code

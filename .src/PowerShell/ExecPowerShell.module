@@ -15,6 +15,7 @@
 ''' The user side PowerShell object takes care of formatting the command correctly
 '''  and correctly processing the response.
 '''
+' Released under GPL 3 license
 
 Export
 '' The input pipe to be read

@@ -8,6 +8,9 @@
 ''' which are started by this module
 ''' This will return the list of args not used by this function
 ''' the user may also do another args.begin etc.
+
+' Released under GPL 3 license
+
 Export
 PowerShell As Boolean = False
 PasswordShell As Boolean = False
