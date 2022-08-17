@@ -64,7 +64,7 @@ Public Sub _new()
   Else If Not Exist(AppRoot) Then  'must be a project directory project
     AppRoot = Application.Path
     AppPass = Temp("TempPass")
-    Exec ["gba3", "-o", AppPass, AppRoot]
+    Exec ["gba3", "-o", AppPass, AppRoot] Wait
   Endif
 
   Dim Askpass As String = Temp("Password_" & Application.name)
